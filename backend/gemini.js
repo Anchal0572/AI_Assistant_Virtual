@@ -99,9 +99,9 @@ const fallbackIntentParser = (command, assistantName, userName) => {
         })
     }
 
-    // 11. YouTube Open / Search
-    if (cleanLower.includes("youtube")) {
-        if (cleanLower.includes("open") || cleanLower === "youtube" || cleanLower === "open youtube") {
+    // 11. YouTube Open / Search / Channel
+    if (cleanLower.includes("youtube") || cleanLower.includes("you tube") || cleanLower.includes("opentube") || cleanLower.includes("open tube") || cleanLower.includes("utube") || cleanLower.includes("channel")) {
+        if (cleanLower.includes("open") || cleanLower.includes("channel") || cleanLower === "youtube" || cleanLower.includes("opentube")) {
             return JSON.stringify({
                 type: "youtube-open",
                 userInput: "youtube",

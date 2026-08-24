@@ -215,29 +215,23 @@ function Home() {
 
     recognition.onresult = async (e) => {
       const transcript = e.results[e.results.length - 1][0].transcript.trim();
-      const currentAssistantName = (userDataRef.current?.assistantName || "Assistant").toLowerCase();
-      const lower = transcript.toLowerCase();
+      if (!transcript) return;
 
-      const isWakeWord = lower.includes(currentAssistantName);
-      const isDirectCommand = /^(open|play|search|show|what|who|how|where|when|tell|get|time|date|weather|calculator|instagram|facebook|youtube|google)\b/i.test(lower) || lower.includes("youtube") || lower.includes("google") || lower.includes("instagram") || lower.includes("facebook");
-
-      if (isWakeWord || isDirectCommand) {
-        setAiText("");
-        setUserText(transcript);
-        try {
-          recognition.stop();
-        } catch {
-          // ignore
-        }
-        isRecognizingRef.current = false;
-        setListening(false);
-        const data = await getGeminiResponse(transcript);
-        if (data) {
-          handleCommand(data);
-          setAiText(data.response || "");
-        }
-        setUserText("");
+      setAiText("");
+      setUserText(transcript);
+      try {
+        recognition.stop();
+      } catch {
+        // ignore
       }
+      isRecognizingRef.current = false;
+      setListening(false);
+      const data = await getGeminiResponse(transcript);
+      if (data) {
+        handleCommand(data);
+        setAiText(data.response || "");
+      }
+      setUserText("");
     };
 
     const userName = userDataRef.current?.name || "there";

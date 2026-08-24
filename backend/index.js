@@ -52,6 +52,10 @@ const app=express()
 //     },
 //     credentials:true
 // }))
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://virtualassistant-g8qe.onrender.com" // 👈 Render Frontend URL Added
+]
 app.use(cors({
     origin: function(origin, callback) {
         if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) {

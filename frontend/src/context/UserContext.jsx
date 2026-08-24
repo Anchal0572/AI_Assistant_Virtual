@@ -49,7 +49,7 @@ import React, { createContext, useEffect, useState } from 'react'
 export const userDataContext = createContext()
 
 function UserContext({children}) {
-    const serverUrl = "https://virtualassistant-backend-3921.onrender.com"
+    const serverUrl = import.meta.env.VITE_BACKEND_URL || "https://virtualassistant-backend-3921.onrender.com"
     const [userData, setUserData] = useState(null)
     const [loadingUser, setLoadingUser] = useState(true)
     const [frontendImage, setFrontendImage] = useState(null)

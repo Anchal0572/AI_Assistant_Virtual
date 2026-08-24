@@ -90,7 +90,7 @@ const fallbackIntentParser = (command, assistantName, userName) => {
     }
 
     // 10. YouTube Play
-    if (cleanLower.startsWith("play ") || cleanLower.includes("play song") || cleanLower.includes("play video") || cleanLower.includes("play ")) {
+    if (cleanLower.startsWith("play ") || cleanLower.includes("play song") || cleanLower.includes("play video")) {
         const query = cleanText.replace(/^(please\s+)?play\s+/i, '').replace(/on youtube/i, '').trim()
         return JSON.stringify({
             type: "youtube-play",
@@ -99,9 +99,16 @@ const fallbackIntentParser = (command, assistantName, userName) => {
         })
     }
 
-    // 11. YouTube Search
+    // 11. YouTube Open / Search
     if (cleanLower.includes("youtube")) {
-        const query = cleanText.replace(/^(search\s+(on\s+)?youtube\s+(for\s+)?|youtube\s+search\s+)/i, '').replace(/on youtube/i, '').trim()
+        if (cleanLower.includes("open") || cleanLower === "youtube" || cleanLower === "open youtube") {
+            return JSON.stringify({
+                type: "youtube-open",
+                userInput: "youtube",
+                response: "Opening YouTube for you."
+            })
+        }
+        const query = cleanText.replace(/^(search\s+(on\s+)?youtube\s+(for\s+)?|youtube\s+search\s+)/i, '').replace(/on youtube/i, '').replace(/open youtube/i, '').trim()
         return JSON.stringify({
             type: "youtube-search",
             userInput: query || cleanText,

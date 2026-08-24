@@ -136,6 +136,9 @@ function Home() {
     if (type === "weather-show") {
       window.open(`https://www.google.com/search?q=weather`, '_blank');
     }
+    if (type === "youtube-open") {
+      window.open(`https://www.youtube.com/`, '_blank');
+    }
     if (type === 'youtube-search' || type === 'youtube-play') {
       const query = encodeURIComponent(userInput || "");
       window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
@@ -213,8 +216,12 @@ function Home() {
     recognition.onresult = async (e) => {
       const transcript = e.results[e.results.length - 1][0].transcript.trim();
       const currentAssistantName = (userDataRef.current?.assistantName || "Assistant").toLowerCase();
-      
-      if (transcript.toLowerCase().includes(currentAssistantName)) {
+      const lower = transcript.toLowerCase();
+
+      const isWakeWord = lower.includes(currentAssistantName);
+      const isDirectCommand = /^(open|play|search|show|what|who|how|where|when|tell|get|time|date|weather|calculator|instagram|facebook|youtube|google)\b/i.test(lower) || lower.includes("youtube") || lower.includes("google") || lower.includes("instagram") || lower.includes("facebook");
+
+      if (isWakeWord || isDirectCommand) {
         setAiText("");
         setUserText(transcript);
         try {

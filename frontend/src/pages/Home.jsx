@@ -217,21 +217,64 @@ function Home() {
       const transcript = e.results[e.results.length - 1][0].transcript.trim();
       if (!transcript) return;
 
-      setAiText("");
+      setAiText("Processing...");
       setUserText(transcript);
-      try {
-        recognition.stop();
-      } catch {
-        // ignore
-      }
+      try { recognition.stop(); } catch { /* ignore */ }
       isRecognizingRef.current = false;
       setListening(false);
-      const data = await getGeminiResponse(transcript);
-      if (data) {
-        handleCommand(data);
-        setAiText(data.response || "");
+
+      // Client-side fallback parser for instant responses
+      const clientFallback = (text) => {
+        const lower = text.toLowerCase();
+        const name = userDataRef.current?.assistantName || "Assistant";
+        const userName = userDataRef.current?.name || "there";
+        if (lower.includes("how are you")) return { type: "general", userInput: text, response: `I am doing great ${userName}! How can I help you?` };
+        if (lower.includes("hello") || lower.includes("hi ") || lower === "hi") return { type: "general", userInput: text, response: `Hello ${userName}! I'm ${name}, what can I do for you?` };
+        if (lower.includes("your name") || lower.includes("who are you")) return { type: "general", userInput: text, response: `I am ${name}, your virtual assistant created by ${userName}.` };
+        if (lower.includes("thank")) return { type: "general", userInput: text, response: `You're welcome ${userName}! Anything else I can help you with?` };
+        if (lower.includes("youtube") || lower.includes("you tube") || lower.includes("opentube") || lower.includes("open tube") || lower.includes("utube")) {
+          if (lower.includes("open") || lower.includes("channel") || lower.includes("opentube")) return { type: "youtube-open", userInput: "youtube", response: "Opening YouTube for you." };
+          return { type: "youtube-search", userInput: text, response: "Searching YouTube for you." };
+        }
+        if (lower.includes("google")) return { type: "google-search", userInput: text, response: "Searching Google for you." };
+        if (lower.includes("instagram")) return { type: "instagram-open", userInput: text, response: "Opening Instagram for you." };
+        if (lower.includes("facebook")) return { type: "facebook-open", userInput: text, response: "Opening Facebook for you." };
+        if (lower.includes("weather")) return { type: "weather-show", userInput: text, response: "Showing weather for you." };
+        if (lower.includes("time")) return { type: "get-time", userInput: text, response: "Checking the time for you." };
+        if (lower.includes("date")) return { type: "get-date", userInput: text, response: "Checking today's date." };
+        if (lower.includes("play ")) return { type: "youtube-play", userInput: text.replace(/^(play\s+)/i, '').trim(), response: `Playing ${text.replace(/^(play\s+)/i, '').trim()} on YouTube.` };
+        return null;
+      };
+
+      try {
+        const data = await getGeminiResponse(transcript);
+        if (data && data.response) {
+          handleCommand(data);
+          setAiText(data.response);
+        } else {
+          // Backend returned null/failed — use client-side fallback
+          const fallback = clientFallback(transcript);
+          if (fallback) {
+            handleCommand(fallback);
+            setAiText(fallback.response);
+          } else {
+            const fallbackMsg = "I heard you but couldn't process that. Please try again.";
+            speak(fallbackMsg);
+            setAiText(fallbackMsg);
+          }
+        }
+      } catch (err) {
+        const fallback = clientFallback(transcript);
+        if (fallback) {
+          handleCommand(fallback);
+          setAiText(fallback.response);
+        } else {
+          const fallbackMsg = "Sorry, I'm having trouble connecting. Please try again.";
+          speak(fallbackMsg);
+          setAiText(fallbackMsg);
+        }
       }
-      setUserText("");
+      setTimeout(() => setUserText(""), 2000);
     };
 
     const userName = userDataRef.current?.name || "there";

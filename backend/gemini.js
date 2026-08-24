@@ -143,7 +143,7 @@ You are not Google. You will now behave like a voice-enabled assistant.
 Your task is to understand the user's natural language input and respond with a JSON object like this:
 
 {
-  "type": "general" | "google-search" | "youtube-search" | "youtube-play" | "get-time" | "get-date" | "get-day" | "get-month"|"calculator-open" | "instagram-open" |"facebook-open" |"weather-show",
+  "type": "general" | "google-search" | "youtube-search" | "youtube-play" | "youtube-open" | "get-time" | "get-date" | "get-day" | "get-month"|"calculator-open" | "instagram-open" |"facebook-open" |"weather-show",
   "userInput": "<search query or clean input>",
   "response": "<a short spoken response to read out loud to the user>"
 }
@@ -158,6 +158,7 @@ Type meanings:
 - "google-search": if user wants to search something on Google.
 - "youtube-search": if user wants to search something on YouTube.
 - "youtube-play": if user wants to directly play a video or song.
+- "youtube-open": if user wants to open YouTube website (e.g. "open youtube", "open you tube", "open tube").
 - "calculator-open": if user wants to open a calculator.
 - "instagram-open": if user wants to open instagram.
 - "facebook-open": if user wants to open facebook.

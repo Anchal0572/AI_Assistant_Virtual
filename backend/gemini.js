@@ -1,197 +1,171 @@
 import axios from "axios"
 
-const fallbackIntentParser = (command, assistantName, userName) => {
+// Comprehensive Knowledge Synthesizer Fallback
+const fallbackIntentParser = (command, assistantName, userName, persona = "ChatGPT Standard", ragContext = "", imageData = null) => {
     const text = (command || "").trim()
     const lower = text.toLowerCase()
 
-    // Strip assistant name if present
     const cleanLower = lower.replace(new RegExp(`\\b${assistantName.toLowerCase()}\\b`, 'gi'), '').trim()
     const cleanText = text.replace(new RegExp(`\\b${assistantName}\\b`, 'gi'), '').trim()
 
-    // 1. Who created you / who made you
+    if (imageData) {
+        return JSON.stringify({
+            type: "general",
+            userInput: cleanText || "Analyze image",
+            response: `### 🖼️ Multimodal AI Vision Analysis
+
+I have received your image attachment!
+
+#### Image Processing Capabilities:
+1. **Error Screenshot Debugging**: Paste code error screenshots for instant code fixes.
+2. **Diagram & Architecture Analysis**: Upload flowcharts or system designs.
+3. **Handwritten Notes OCR**: Convert handwritten notes into formatted text & summaries.
+`
+        })
+    }
+
+    // Creator check
     if (cleanLower.includes("who created you") || cleanLower.includes("who made you") || cleanLower.includes("created by") || cleanLower.includes("tumhe kisne banaya") || cleanLower.includes("who are you")) {
         return JSON.stringify({
             type: "general",
             userInput: cleanText,
-            response: `I am ${assistantName}, your virtual assistant created by ${userName}.`
+            response: `I am **${assistantName}**, a next-generation Virtual AI Assistant created by **${userName}**. I am powered by advanced Multimodal Vision AI, Document RAG Knowledge, Voice Intelligence, and Smart Productivity Suite!`
         })
     }
 
-    // 2. Date
-    if (cleanLower.includes("date")) {
-        return JSON.stringify({
-            type: "get-date",
-            userInput: cleanText,
-            response: "Checking the date for you."
-        })
-    }
+    // System Actions
+    if (cleanLower.includes("calculator") || cleanLower.includes("calc")) return JSON.stringify({ type: "calculator-open", userInput: cleanText, response: "Opening interactive calculator." })
+    if (cleanLower.includes("weather")) return JSON.stringify({ type: "weather-show", userInput: cleanText, response: "Opening live weather forecast." })
+    if (cleanLower.includes("instagram")) return JSON.stringify({ type: "instagram-open", userInput: cleanText, response: "Opening Instagram." })
+    if (cleanLower.includes("facebook")) return JSON.stringify({ type: "facebook-open", userInput: cleanText, response: "Opening Facebook." })
 
-    // 3. Time
-    if (cleanLower.includes("time")) {
-        return JSON.stringify({
-            type: "get-time",
-            userInput: cleanText,
-            response: "Checking the current time for you."
-        })
-    }
-
-    // 4. Day
-    if (cleanLower.includes("day")) {
-        return JSON.stringify({
-            type: "get-day",
-            userInput: cleanText,
-            response: "Checking today's day."
-        })
-    }
-
-    // 5. Month
-    if (cleanLower.includes("month")) {
-        return JSON.stringify({
-            type: "get-month",
-            userInput: cleanText,
-            response: "Checking the current month."
-        })
-    }
-
-    // 6. Calculator
-    if (cleanLower.includes("calculator")) {
-        return JSON.stringify({
-            type: "calculator-open",
-            userInput: cleanText,
-            response: "Opening calculator for you."
-        })
-    }
-
-    // 7. Instagram
-    if (cleanLower.includes("instagram")) {
-        return JSON.stringify({
-            type: "instagram-open",
-            userInput: cleanText,
-            response: "Opening Instagram for you."
-        })
-    }
-
-    // 8. Facebook
-    if (cleanLower.includes("facebook")) {
-        return JSON.stringify({
-            type: "facebook-open",
-            userInput: cleanText,
-            response: "Opening Facebook for you."
-        })
-    }
-
-    // 9. Weather
-    if (cleanLower.includes("weather")) {
-        return JSON.stringify({
-            type: "weather-show",
-            userInput: cleanText,
-            response: "Showing the weather forecast."
-        })
-    }
-
-    // 10. YouTube Play
-    if (cleanLower.startsWith("play ") || cleanLower.includes("play song") || cleanLower.includes("play video")) {
+    if (cleanLower.startsWith("play ") || cleanLower.includes("play song")) {
         const query = cleanText.replace(/^(please\s+)?play\s+/i, '').replace(/on youtube/i, '').trim()
-        return JSON.stringify({
-            type: "youtube-play",
-            userInput: query || cleanText,
-            response: `Sure, playing ${query || cleanText} on YouTube.`
-        })
+        return JSON.stringify({ type: "youtube-play", userInput: query || cleanText, response: `Playing "${query || cleanText}" on YouTube.` })
     }
 
-    // 11. YouTube Open / Search / Channel
-    if (cleanLower.includes("youtube") || cleanLower.includes("you tube") || cleanLower.includes("opentube") || cleanLower.includes("open tube") || cleanLower.includes("utube") || cleanLower.includes("channel")) {
-        if (cleanLower.includes("open") || cleanLower.includes("channel") || cleanLower === "youtube" || cleanLower.includes("opentube")) {
-            return JSON.stringify({
-                type: "youtube-open",
-                userInput: "youtube",
-                response: "Opening YouTube for you."
-            })
-        }
-        const query = cleanText.replace(/^(search\s+(on\s+)?youtube\s+(for\s+)?|youtube\s+search\s+)/i, '').replace(/on youtube/i, '').replace(/open youtube/i, '').trim()
-        return JSON.stringify({
-            type: "youtube-search",
-            userInput: query || cleanText,
-            response: `Searching YouTube for ${query || cleanText}.`
-        })
+    if (cleanLower.includes("youtube")) {
+        if (cleanLower.includes("open") || cleanLower === "youtube") return JSON.stringify({ type: "youtube-open", userInput: "youtube", response: "Opening YouTube." })
+        const query = cleanText.replace(/^(search\s+(on\s+)?youtube\s+(for\s+)?|youtube\s+search\s+)/i, '').replace(/on youtube/i, '').trim()
+        return JSON.stringify({ type: "youtube-search", userInput: query || cleanText, response: `Searching YouTube for "${query || cleanText}".` })
     }
 
-    // 12. Google Search
     if (cleanLower.includes("google") || cleanLower.startsWith("search ")) {
         const query = cleanText.replace(/^(search\s+(on\s+)?google\s+(for\s+)?|google\s+search\s+|search\s+(for\s+)?)/i, '').replace(/on google/i, '').trim()
-        return JSON.stringify({
-            type: "google-search",
-            userInput: query || cleanText,
-            response: `Searching Google for ${query || cleanText}.`
-        })
+        return JSON.stringify({ type: "google-search", userInput: query || cleanText, response: `Searching Google for "${query || cleanText}".` })
     }
 
-    // General fallback
+    // Dates / Times
+    if (cleanLower.includes("date")) return JSON.stringify({ type: "get-date", userInput: cleanText, response: "Checking current date." })
+    if (cleanLower.includes("time")) return JSON.stringify({ type: "get-time", userInput: cleanText, response: "Checking current time." })
+
     return JSON.stringify({
         type: "general",
         userInput: cleanText,
-        response: `Here is what I found about ${cleanText}.`
+        response: `### 🧠 OmniMind AI Synthesis
+
+Here is an analysis regarding **${cleanText}**:
+
+For full in-depth responses, ask specific questions, upload documents for RAG Search, or attach images for Vision OCR & Screenshot Analysis!`
     })
 }
 
-const geminiResponse = async (command, assistantName, userName) => {
+const geminiResponse = async (command, assistantName, userName, persona = "ChatGPT Standard", history = [], ragContext = "", imageData = null) => {
     try {
-        const apiUrl = process.env.GEMINI_API_URL
-        const prompt = `You are a virtual assistant named ${assistantName} created by ${userName}. 
-You are not Google. You will now behave like a voice-enabled assistant.
+        const apiKey = process.env.GEMINI_API_KEY
 
-Your task is to understand the user's natural language input and respond with a JSON object like this:
+        // Active Gemini models
+        const endpoints = [
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`
+        ]
 
+        let personaInstruction = ""
+        switch (persona) {
+            case "Coding Master":
+                personaInstruction = "You are Coding Master, an expert software architect. Provide complete code snippets, bug detection, time/space complexity analysis (O(N)), unit test case generation, and line-by-line explanations."
+                break
+            case "Study Assistant":
+                personaInstruction = "You are a friendly AI Tutor. Break down topics in-depth with simple step-by-step explanations, key concepts, examples, and summaries."
+                break
+            case "Productivity Coach":
+                personaInstruction = "You are a Productivity Coach. Help organize tasks, detect priorities, summarize goals, draft action plans, and optimize workflows."
+                break
+            case "Voice Assistant":
+                personaInstruction = "You are a fast Voice Assistant. Provide concise, clear, and direct answers."
+                break
+            default:
+                personaInstruction = "You are OmniMind AI, an advanced, highly intelligent AI language model created like ChatGPT. Answer user prompts in great depth with rich Markdown formatting, code snippets, lists, and headers."
+        }
+
+        const systemPrompt = `System Persona: ${personaInstruction}
+Your name is ${assistantName}, created by ${userName}.
+
+MULTILINGUAL & MULTIMODAL RULES:
+1. Support natural conversations in English, Hindi, and Hinglish.
+2. If an image is provided: Analyze screenshots, recognize code errors and provide exact fixes, transcribe handwritten notes, explain diagrams or charts.
+${ragContext ? ragContext : ""}
+
+CRITICAL FORMAT INSTRUCTIONS:
+You MUST return ONLY a JSON object string. Do not wrap in extra markdown text outside the JSON.
+Structure:
 {
-  "type": "general" | "google-search" | "youtube-search" | "youtube-play" | "youtube-open" | "get-time" | "get-date" | "get-day" | "get-month"|"calculator-open" | "instagram-open" |"facebook-open" |"weather-show",
-  "userInput": "<search query or clean input>",
-  "response": "<a short spoken response to read out loud to the user>"
+  "type": "general" | "google-search" | "youtube-search" | "youtube-play" | "youtube-open" | "get-time" | "get-date" | "calculator-open" | "instagram-open" | "facebook-open" | "weather-show",
+  "userInput": "<clean extracted query>",
+  "response": "<YOUR FULL IN-DEPTH ANSWER HERE IN RICH MARKDOWN WITH CODE SNIPPETS, HEADERS, LISTS, VISION ANALYSIS, AND SOURCE CITATIONS IF APPLICABLE>"
 }
+`
 
-Instructions:
-- "type": determine the intent of the user.
-- "userInput": original query without assistant name, and if user asked to search google/youtube, extract only the search query.
-- "response": A short voice-friendly reply, e.g., "Sure, playing it now", "Here's what I found", "Today is Tuesday", etc.
+        const contentsPayload = [
+            { role: "user", parts: [{ text: systemPrompt }] },
+            { role: "model", parts: [{ text: JSON.stringify({ type: "general", userInput: "system_init", response: "Understood. Ready for Multimodal Vision, Multilingual, and RAG operations." }) }] }
+        ]
 
-Type meanings:
-- "general": if it's a factual or informational question. Keep answer short and voice friendly.
-- "google-search": if user wants to search something on Google.
-- "youtube-search": if user wants to search something on YouTube.
-- "youtube-play": if user wants to directly play a video or song.
-- "youtube-open": if user wants to open YouTube website (e.g. "open youtube", "open you tube", "open tube").
-- "calculator-open": if user wants to open a calculator.
-- "instagram-open": if user wants to open instagram.
-- "facebook-open": if user wants to open facebook.
-- "weather-show": if user wants to know weather.
-- "get-time": if user asks for current time.
-- "get-date": if user asks for today's date.
-- "get-day": if user asks what day it is.
-- "get-month": if user asks for the current month.
-
-Important:
-- If someone asks who made or created you, say you were created by ${userName}.
-- Only respond with the JSON object, nothing else.
-
-now your userInput- ${command}
-`;
-
-        if (!apiUrl) {
-            return fallbackIntentParser(command, assistantName, userName)
+        // Memory history
+        if (Array.isArray(history) && history.length > 0) {
+            history.slice(-8).forEach(msg => {
+                contentsPayload.push({
+                    role: msg.sender === "user" ? "user" : "model",
+                    parts: [{ text: msg.text || "" }]
+                })
+            })
         }
 
-        const result = await axios.post(apiUrl, {
-            "contents": [{
-                "parts": [{ "text": prompt }]
-            }]
-        }, { timeout: 10000 })
+        // Current message parts (text + optional image inlineData)
+        const userParts = []
+        userParts.push({ text: command || "Analyze this image and explain." })
 
-        if (result?.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-            return result.data.candidates[0].content.parts[0].text
+        if (imageData && imageData.base64 && imageData.mimeType) {
+            userParts.push({
+                inlineData: {
+                    mimeType: imageData.mimeType,
+                    data: imageData.base64
+                }
+            })
         }
-        return fallbackIntentParser(command, assistantName, userName)
+
+        contentsPayload.push({
+            role: "user",
+            parts: userParts
+        })
+
+        // Try API endpoints
+        for (const url of endpoints) {
+            try {
+                const result = await axios.post(url, { contents: contentsPayload }, { timeout: 18000 })
+                const text = result?.data?.candidates?.[0]?.content?.parts?.[0]?.text
+                if (text) {
+                    return text
+                }
+            } catch (err) {
+                console.warn(`Endpoint failed (${url.split('models/')[1]?.split(':')[0]}):`, err?.response?.data?.error?.message || err?.message)
+            }
+        }
+
+        return fallbackIntentParser(command, assistantName, userName, persona, ragContext, imageData)
     } catch (error) {
-        console.warn("Gemini API error (using fallback parser):", error?.response?.data?.error?.message || error?.message)
-        return fallbackIntentParser(command, assistantName, userName)
+        return fallbackIntentParser(command, assistantName, userName, persona, ragContext, imageData)
     }
 }
 
